@@ -62,8 +62,9 @@ body {
 .exp-left .phase-label { font-size: 16px; font-weight: bold; color: #333; }
 .exp-left .timer-label { font-size: 18px; font-weight: bold; color: #c00; }
 .exp-left .stimulus-canvas {
-  flex: 1; min-height: 0; width: 100%; border: 1px solid #ddd;
-  background: #f8f8f8; border-radius: 4px;
+  flex: 1; min-height: 0; width: 100%; height: 100%;
+  border: 1px solid #ddd; background: #f8f8f8; border-radius: 4px;
+  display: block;
 }
 .exp-left .status-label {
   text-align: center; font-size: 13px; color: #555; padding: 4px; flex-shrink: 0;
@@ -71,11 +72,12 @@ body {
 /* Middle: canvas */
 .exp-mid {
   flex: 2; display: flex; flex-direction: column; padding: 8px;
-  min-width: 140px;
+  min-width: 140px; min-height: 0;
 }
 .exp-mid .drawing-canvas {
-  flex: 1; width: 100%; border: 1px solid #ccc; background: #fff;
-  border-radius: 4px; cursor: crosshair;
+  flex: 1; width: 100%; height: 100%; min-height: 0;
+  border: 1px solid #ccc; background: #fff; border-radius: 4px;
+  cursor: crosshair; display: block;
 }
 /* Right: toolbar */
 .exp-right {
@@ -312,6 +314,9 @@ let currentTool = 'thin';
 // 画布引用
 let stimulusCanvas, stimulusCtx;
 let drawCanvas, drawCtx;
+// 画布逻辑尺寸（CSS 像素，与 ctx.scale(dpr,dpr) 后的坐标空间一致）
+let canvasLogicalW = 0, canvasLogicalH = 0;
+let stimLogicalW = 0, stimLogicalH = 0;
 
 // ============================================================
 // 页面切换
@@ -518,13 +523,12 @@ function drawReyFigure(ctx, w, h) {
 // ============================================================
 function redrawCanvas() {
   if (!drawCtx) return;
-  const cw = drawCanvas.width, ch = drawCanvas.height;
-  drawCtx.clearRect(0, 0, cw, ch);
+  drawCtx.clearRect(0, 0, canvasLogicalW, canvasLogicalH);
   drawCtx.fillStyle = '#fff';
-  drawCtx.fillRect(0, 0, cw, ch);
+  drawCtx.fillRect(0, 0, canvasLogicalW, canvasLogicalH);
   drawCtx.strokeStyle = '#ccc';
   drawCtx.lineWidth = 1;
-  drawCtx.strokeRect(0.5, 0.5, cw - 1, ch - 1);
+  drawCtx.strokeRect(0.5, 0.5, canvasLogicalW - 1, canvasLogicalH - 1);
 
   for (const st of strokes) {
     drawStroke(st);
@@ -603,22 +607,19 @@ function updateStatus() {
 // ============================================================
 function getCanvasPos(e) {
   const rect = drawCanvas.getBoundingClientRect();
-  const scaleX = drawCanvas.width / rect.width;
-  const scaleY = drawCanvas.height / rect.height;
+  // ctx.scale(dpr,dpr) 已将坐标空间映射到逻辑像素，此处只需 CSS 坐标
   return {
-    x: (e.clientX - rect.left) * scaleX,
-    y: (e.clientY - rect.top) * scaleY,
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top,
   };
 }
 
 function getTouchPos(e) {
   const t = e.touches[0] || e.changedTouches[0];
   const rect = drawCanvas.getBoundingClientRect();
-  const scaleX = drawCanvas.width / rect.width;
-  const scaleY = drawCanvas.height / rect.height;
   return {
-    x: (t.clientX - rect.left) * scaleX,
-    y: (t.clientY - rect.top) * scaleY,
+    x: t.clientX - rect.left,
+    y: t.clientY - rect.top,
   };
 }
 
@@ -705,11 +706,19 @@ async function startNewTest() {
   document.getElementById('phaseLabel').textContent = '临摹阶段';
   document.getElementById('stimulusCanvas').style.display = '';
   updateStatus();
-  initCanvases();
-  redrawCanvas();
-  drawReyFigure(stimulusCtx, stimulusCanvas.width, stimulusCanvas.height);
   showPage('experiment');
-  startTimer(COPY_TIME);
+
+  // 等待 CSS 布局完成后再初始化 Canvas（避免 clientWidth/Height 为 0）
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      initCanvases();
+      redrawCanvas();
+      if (currentPhase === 'copy') {
+        drawReyFigure(stimulusCtx, stimLogicalW, stimLogicalH);
+      }
+      startTimer(COPY_TIME);
+    });
+  });
 }
 
 function finishPhase() {
@@ -876,26 +885,29 @@ function initCanvases() {
   stimulusCanvas = document.getElementById('stimulusCanvas');
   drawCanvas = document.getElementById('drawCanvas');
 
-  // 刺激图 Canvas
-  const sRect = stimulusCanvas.parentElement.getBoundingClientRect();
-  const sW = sRect.width - 16;
-  const sH = sRect.height - 64;
   const dpr = window.devicePixelRatio || 1;
-  stimulusCanvas.width = sW * dpr;
-  stimulusCanvas.height = sH * dpr;
-  stimulusCanvas.style.width = sW + 'px';
-  stimulusCanvas.style.height = sH + 'px';
+
+  // 刺激图 Canvas — 使用 CSS 布局后的 client 尺寸
+  const sW = stimulusCanvas.clientWidth;
+  const sH = stimulusCanvas.clientHeight;
+  if (sW > 0 && sH > 0) {
+    stimulusCanvas.width = sW * dpr;
+    stimulusCanvas.height = sH * dpr;
+    stimLogicalW = sW;
+    stimLogicalH = sH;
+  }
   stimulusCtx = stimulusCanvas.getContext('2d');
   stimulusCtx.scale(dpr, dpr);
 
   // 绘图 Canvas
-  const dRect = drawCanvas.parentElement.getBoundingClientRect();
-  const dW = dRect.width - 16;
-  const dH = dRect.height - 16;
-  drawCanvas.width = dW * dpr;
-  drawCanvas.height = dH * dpr;
-  drawCanvas.style.width = dW + 'px';
-  drawCanvas.style.height = dH + 'px';
+  const dW = drawCanvas.clientWidth;
+  const dH = drawCanvas.clientHeight;
+  if (dW > 0 && dH > 0) {
+    drawCanvas.width = dW * dpr;
+    drawCanvas.height = dH * dpr;
+    canvasLogicalW = dW;
+    canvasLogicalH = dH;
+  }
   drawCtx = drawCanvas.getContext('2d');
   drawCtx.scale(dpr, dpr);
 }
@@ -919,11 +931,15 @@ function bindEvents() {
   // 窗口大小变化时重新初始化
   window.addEventListener('resize', () => {
     if (document.getElementById('page-experiment').classList.contains('active')) {
-      initCanvases();
-      redrawCanvas();
-      if (currentPhase === 'copy') {
-        drawReyFigure(stimulusCtx, stimulusCanvas.width / (window.devicePixelRatio || 1), stimulusCanvas.height / (window.devicePixelRatio || 1));
-      }
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          initCanvases();
+          redrawCanvas();
+          if (currentPhase === 'copy') {
+            drawReyFigure(stimulusCtx, stimLogicalW, stimLogicalH);
+          }
+        });
+      });
     }
   });
 }
