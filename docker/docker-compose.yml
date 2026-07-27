@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  psychopy:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: psychopy-project
+    environment:
+      - DISPLAY=:99
+      - QT_QPA_PLATFORM=offscreen
+    volumes:
+      - ../experiments:/app/experiments
+      - ../data:/app/data
+      - ../output:/app/output
+      - ../config:/app/config
+      - ../src:/app/src
+    stdin_open: true
+    tty: true

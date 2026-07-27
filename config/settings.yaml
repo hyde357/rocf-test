@@ -1,0 +1,14 @@
+# PsychoPy Project Configuration
+project:
+  name: psychopy-project
+  window:
+    fullscr: false
+    size: [1024, 768]
+    color: [0, 0, 0]
+    units: height
+  
+  data:
+    path: data/
+  
+  output:
+    path: output/
