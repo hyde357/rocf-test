@@ -63,6 +63,8 @@ rocf-test/
 
 参见 [ROCF 功能演示视频](ROCF_演示视频.mp4)
 
+![ROCF 功能演示](ROCF_演示视频.gif)
+
 ## License
 
 MIT
