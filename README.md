@@ -1,50 +1,68 @@
----
-AIGC:
-    Label: "1"
-    ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: bed9e04a7fbdd413e715ac8d103dd66b_c859262f7b8611f180e15254006c9bbf
-    ReservedCode1: TfLwojpVzKdBL9H2Kl5EwP/6b6zc/JiOtnW2DQIVpAF6SDD92kTETfRg6b2bRbjpmjHY4MJbLXEqmjBB4qX4MHX5yNBOJK1cc/V2b6nSiZd681NNvDJqTOQFlQj28QR5HkxDmiaJXDCLFnx6BnCCUWYUZE9EV8uMg1dBfDTKuLoLecXvJnQ7CJs/OkA=
-    ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: bed9e04a7fbdd413e715ac8d103dd66b_c859262f7b8611f180e15254006c9bbf
-    ReservedCode2: TfLwojpVzKdBL9H2Kl5EwP/6b6zc/JiOtnW2DQIVpAF6SDD92kTETfRg6b2bRbjpmjHY4MJbLXEqmjBB4qX4MHX5yNBOJK1cc/V2b6nSiZd681NNvDJqTOQFlQj28QR5HkxDmiaJXDCLFnx6BnCCUWYUZE9EV8uMg1dBfDTKuLoLecXvJnQ7CJs/OkA=
----
+# ROCF Test
 
-# PsychoPy Project
+Rey-Osterrieth Complex Figure (ROCF) 测验应用 — 一个基于 PySide6 的跨平台视觉记忆评估工具。
 
-基于 [PsychoPy](https://www.psychopy.org/) 的实验开发项目，支持本地开发与 Docker 部署。
+## 功能
+
+- 显示 ROCF 复杂图形供受试者观察
+- 自动计时（观察阶段）
+- 间隔后进入默画阶段，记录绘制时间
+- 生成测验结果报告
+
+## 安装
+
+```bash
+pip install PySide6
+```
+
+或使用自动依赖安装脚本：
+
+```bash
+python scripts/install_deps.py
+```
+
+## 使用
+
+```bash
+python assets/rocf_qt.py
+```
+
+## 作为 Marvis Skill 使用
+
+本仓库也是一个标准的 Marvis Skill。将仓库克隆到 skills 目录后，即可通过 `use_skill("rocf-test")` 在 Agent 中直接调用。
+
+```bash
+# 安装为 Marvis skill
+npx skills add <repository-url> -g -y
+```
+
+## Skill 触发条件
+
+当用户提到以下关键词时自动激活：
+- 瑞氏复杂图形测验 / ROCF / Rey-Osterrieth / 视觉记忆测验
+
+## 跨平台支持
+
+- macOS
+- Windows
+- Linux
 
 ## 目录结构
 
 ```
-psychopy-project/
-├── src/            # 实验代码
-├── experiments/    # 实验定义文件 (.psyexp)
-├── data/           # 实验数据
-├── output/         # 结果输出
-├── config/         # 配置文件
-├── docker/         # Docker 相关配置
-├── venv/           # 虚拟环境（本地）
-└── requirements.txt
+rocf-test/
+├── README.md
+├── assets/
+│   └── rocf_qt.py
+├── src/
+├── config/
+└── docker/
 ```
 
-## 本地开发
+## 演示视频
 
-```bash
-cd psychopy-project
-source venv/bin/activate
-python src/your_experiment.py
-```
+参见 [ROCF 功能演示视频](ROCF_演示视频.mp4)
 
-## Docker 部署
+## License
 
-```bash
-cd psychopy-project/docker
-docker compose up --build
-```
-
-## 依赖
-
-- Python 3.11+
-- PsychoPy 2026.1.3
-- 详见 requirements.txt
-*（内容由AI生成，仅供参考）*
+MIT
