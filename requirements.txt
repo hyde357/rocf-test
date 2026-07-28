@@ -1,7 +1,0 @@
-psychopy>=2024.0.0
-numpy
-scipy
-matplotlib
-pandas
-pyglet
-（内容由AI生成，仅供参考）
