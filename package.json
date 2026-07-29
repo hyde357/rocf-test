@@ -1,0 +1,35 @@
+{
+  "name": "rocf-test",
+  "version": "3.0.0",
+  "description": "ROCF 电子测评系统",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.rocf.test",
+    "productName": "ROCF电子测评系统",
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "language": "2052"
+    },
+    "files": [
+      "index.html",
+      "main.js",
+      "assets/**/*"
+    ]
+  },
+  "devDependencies": {
+    "electron": "*",
+    "electron-builder": "*"
+  }
+}
