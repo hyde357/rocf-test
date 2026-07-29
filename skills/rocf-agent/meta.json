@@ -1,0 +1,10 @@
+{
+  "name": "rocf-agent",
+  "author": "yu1studio",
+  "version": "0.0.1",
+  "description": "ROCF 电子测评系统：基于 HTML5 Canvas 的 Rey-Osterrieth 复杂图形测验工具，支持图形呈现、描画轨迹采集、Osterrieth 36 分自动评分、报告生成与导出。Web 版部署于 https://cnb.yu1studio.cn/，桌面版提供 macOS dmg 和 Windows 7z 安装包。",
+  "display_name": "ROCF 电子测评系统",
+  "display_description": "视觉记忆评估工具：Rey-Osterrieth 复杂图形测验的电子化实现",
+  "type": "application",
+  "tags": ["psychology", "cognitive-assessment", "ROCF", "visual-memory", "education"]
+}
