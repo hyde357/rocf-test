@@ -1,0 +1,570 @@
+% ROCF 电子测评系统 — 设计与开发文档
+% tectonic rocf_doc.tex
+\documentclass[12pt,a4paper]{ctexart}
+
+% === 页面布局 ===
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.8cm, right=2.5cm]{geometry}
+
+% === 字体 ===
+\setCJKmainfont{PingFang SC}
+\setmonofont{Menlo}[Scale=0.9]
+
+% === 常用宏包 ===
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{titlesec}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{tabularx}
+\setlength{\headheight}{14.5pt}
+
+% === 超链接 ===
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  urlcolor=cyan!60!black,
+  citecolor=green!50!black,
+  linktoc=none
+}
+
+% === 代码块 ===
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{gray!8},
+  frame=single,
+  framesep=6pt,
+  rulecolor=\color{gray!40},
+  breaklines=true,
+  breakatwhitespace=false,
+  language=Python,
+  keywordstyle=\color{blue!60!black},
+  commentstyle=\color{gray!50},
+  stringstyle=\color{orange!70!black},
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=8pt,
+  tabsize=4,
+  xleftmargin=16pt,
+  framexleftmargin=16pt
+}
+
+% === 章节标题 ===
+\titleformat{\section}{\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+% === 页眉页脚 ===
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{ROCF 电子测评系统 — 设计与开发文档}
+\fancyhead[R]{v0.1}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\begin{document}
+
+% ============================================================================
+% 标题页
+% ============================================================================
+\begin{titlepage}
+\centering
+\vspace*{6cm}
+
+{\Huge\bfseries ROCF 电子测评系统\\[6pt] 设计与开发文档\par}
+
+\vspace{2cm}
+
+{\LARGE 版本：v0.1\par}
+
+\vspace{1cm}
+
+{\Large 日期：2026-07-27\par}
+
+\vspace{1cm}
+
+{\normalsize 广西幼儿师范高等专科学校艺术设计专业团队\\顽主（天津）教育科技有限责任公司\\联合开发\par}
+
+\vfill
+
+{\footnotesize 广西·南宁\par}
+\end{titlepage}
+
+% ============================================================================
+% 目录
+% ============================================================================
+\tableofcontents
+\newpage
+
+% ============================================================================
+% 正文
+% ============================================================================
+
+\section{项目背景与文献基础}
+
+\subsection{ROCF 测验概述}
+
+Rey-Osterrieth 复杂图形测验（ROCF）由 André Rey 于 1941 年首创，1944 年由 Paul-Alexandre Osterrieth 标准化，是神经心理学领域使用最广泛的视空间能力与记忆评估工具之一。其核心范式为"临摹→即时回忆→延迟回忆"，能够在单次施测中同时评估视空间建构能力、执行功能（规划与组织）及情景记忆，已翻译并适用于全球 40 余个国家。
+
+\subsection{关键文献发现（本次开发依据）}
+
+\begin{longtable}{p{4cm} p{5cm} p{5cm}}
+\toprule
+\textbf{维度} & \textbf{核心发现} & \textbf{对系统设计的指导} \\
+\midrule
+评分标准 & Osterrieth 18 单元 0--2 分制是国际通用基准（0--36 分） & 采用 18 单元评分作为默认系统，预留 Meyers 扩展接口 \\
+\midrule
+认知机制 & 临摹依赖额-顶叶执行网络，回忆依赖海马-前额叶回路 & 分别记录临摹与回忆阶段的笔序、潜伏期、组织策略 \\
+\midrule
+组织策略 & 整体式策略者回忆显著优于零散式（Savage 等, 2000） & 捕获绘制顺序，自动判定组织策略类型 \\
+\midrule
+储存/提取分离 & 再认测验可分离储存缺陷 vs 提取缺陷（Meyers \& Meyers） & 纳入再认测验模块 \\
+\midrule
+数字化前沿 & CNN 自动评分 MAE=0.95--1.97，平板施测可捕获人类不可见的笔压/笔序特征 & 完整记录笔画数据，为未来 AI 评分预留数据接口 \\
+\midrule
+跨文化常模 & 教育解释回忆方差 21--41\%，中国人群回忆得分低于西方常模（Zhang 等, 2018） & 内置中文常模参考，支持教育水平校正 \\
+\bottomrule
+\caption{关键文献发现汇总}
+\end{longtable}
+
+\section{系统设计目标}
+
+\subsection{核心目标}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{完整复现标准 ROCF 三阶段施测流程}：临摹 → 干扰任务 → 延迟回忆
+  \item \textbf{精确数字化记录}：捕获每一笔的坐标、时间戳、压力（平板端）、顺序
+  \item \textbf{多评分体系兼容}：默认 Osterrieth 18 单元，可扩展 BQSS / Meyers 等
+  \item \textbf{跨平台部署}：macOS、Windows、Linux 原生 GUI
+  \item \textbf{数据标准化输出}：JSON 结构化数据 + PNG 截图，便于研究级分析
+\end{enumerate}
+
+\subsection{非功能需求}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{指标} & \textbf{目标} \\
+\midrule
+启动时间     & $<$ 2 秒 \\
+内存占用     & $<$ 150 MB \\
+数据保存延迟 & $<$ 100 ms（每笔结束后异步写入） \\
+支持操作系统 & macOS 12+, Windows 10+, Ubuntu 20.04+ \\
+离线可用     & 是，无需网络连接 \\
+\bottomrule
+\end{tabular}
+\caption{非功能需求指标}
+\end{table}
+
+\newpage
+\section{系统架构}
+
+\subsection{总体架构}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../output/rocf_architecture.pdf}
+\caption{ROCF 电子测评系统架构图}
+\label{fig:architecture}
+\end{figure}
+
+\newpage
+\subsection{技术栈}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabularx}{\textwidth}{l>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{层级} & \textbf{技术选型} & \textbf{理由} \\
+\midrule
+GUI 框架   & PySide6 (Qt 6)  & 原生 macOS 外观，跨平台，低资源占用 \\
+图形渲染   & QPainter + QPainterPath & 硬件加速，支持抗锯齿与贝塞尔曲线 \\
+数据存储   & JSON (本地文件)  & 人类可读，研究工具链兼容（Python/R/SPSS） \\
+截图       & QWidget.grab() → PNG & 标准格式，可直接用于评分分析 \\
+打包分发   & py2app (macOS) / PyInstaller (Win/Linux) & 独立 .app / .exe，无需安装 Python \\
+字体       & PingFang SC / Microsoft YaHei / Noto Sans CJK & 跨平台中文字体自动适配 \\
+\bottomrule
+\end{tabularx}
+\caption{技术栈选型}
+\end{table}
+
+\subsection{页面状态机}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.90\textwidth]{../output/rocf_statemachine.pdf}
+  \caption{ROCF 电子测评系统页面状态机}
+  \label{fig:statemachine}
+\end{figure}
+
+\newpage
+\subsection{数据模型}
+
+\begin{lstlisting}[frame=single, basicstyle=\ttfamily\footnotesize, backgroundcolor=\color{gray!8}]
+{
+  "subject": {
+    "id": "DEMO001",
+    "age": "30",
+    "gender": "男",
+    "hand": "右利手"
+  },
+  "timestamp": "20260727_182900",
+  "copy": {
+    "phase": "copy",
+    "strokes": [
+      {
+        "index": 0,
+        "tool": "thin",
+        "color": "#000000",
+        "points": [
+          {"x": 350, "y": 250, "t": 0.0},
+          {"x": 355, "y": 251, "t": 0.016}
+        ]
+      }
+    ],
+    "total_time_ms": 45000,
+    "stroke_count": 8
+  },
+  "recall": {
+    "phase": "recall",
+    "strokes": [...],
+    "total_time_ms": 38000,
+    "stroke_count": 4
+  }
+}
+\end{lstlisting}
+
+\newpage
+\section{功能模块设计}
+
+\subsection{被试信息登记}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{输入字段}：被试编号（默认 SUBJ001）、年龄、性别（男/女/其他）、利手（右/左/双）
+  \item \textbf{校验}：编号与年龄必填非空
+  \item \textbf{时间戳生成}：格式 \texttt{YYYYMMDD\_HHMMSS}，作为数据文件命名前缀
+\end{itemize}
+
+\subsection{临摹阶段 (Copy Phase)}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{属性} & \textbf{值} \\
+\midrule
+默认时长 & 600 秒（10 分钟），可在 SKILL.md 中配置 \texttt{COPY\_TIME} \\
+左侧面板 & Rey 标准刺激图（ReyFigureWidget 渲染） \\
+右侧画布 & DrawingCanvas（白底画布，支持多种笔触） \\
+工具栏   & 细笔 / 粗笔 / 橡皮擦 / 撤销 / 清空 / 完成绘图 \\
+实时状态 & 倒计时显示（分辨率 1 秒，$<$60 秒红色警告） \\
+数据捕获 & 每次 mousePress→mouseMove→mouseRelease 记录完整点序列 \\
+\bottomrule
+\end{tabular}
+\caption{临摹阶段配置}
+\end{table}
+
+\subsubsection{画布交互细节}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{鼠标按下}：记录起始点坐标 (x, y) 与时间戳
+  \item \textbf{鼠标移动}：以固定采样率（约 60 Hz）追加路径点
+  \item \textbf{鼠标释放}：将该笔画推入 strokes 数组，触发状态更新
+  \item \textbf{撤销操作}：从 strokes 数组中移除最后一笔，重绘画布
+  \item \textbf{橡皮擦}：切换为白色粗笔模式（逻辑擦除，非物理擦除）
+\end{itemize}
+
+\subsection{干扰任务 (Distractor Task)}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{属性} & \textbf{值} \\
+\midrule
+默认时长 & 60 秒，可在 SKILL.md 中配置 \texttt{DISTRACT\_TIME} \\
+功能     & 全屏倒计时页面，防止被试复述图形信息 \\
+显示内容 & 大字号倒计时数字 + "请稍候" 提示文字 \\
+结束后   & 自动跳转回忆阶段 \\
+\bottomrule
+\end{tabular}
+\caption{干扰任务配置}
+\end{table}
+
+\subsection{回忆阶段 (Recall Phase)}
+
+\begin{itemize}[leftmargin=*]
+  \item 与临摹阶段共享同一 ExperimentWidget，通过 \texttt{phase} 参数切换
+  \item 左侧面板\textbf{不显示}刺激图（隐藏 ReyFigureWidget）
+  \item 右侧画布与工具栏保持一致
+  \item 默认时长 600 秒，可配置 \texttt{RECALL\_TIME}
+\end{itemize}
+
+\subsection{完成报告}
+
+测验完成后弹出 QMessageBox 汇总：
+\begin{itemize}[leftmargin=*]
+  \item 被试编号
+  \item 临摹笔画数
+  \item 回忆笔画数
+  \item 数据保存路径
+\end{itemize}
+
+同时自动保存：
+\begin{itemize}[leftmargin=*]
+  \item 结构化数据 → \texttt{rocf\_\{id\}\_\{timestamp\}.json}
+  \item 临摹截图 → \texttt{rocf\_\{id\}\_copy\_\{timestamp\}.png}
+  \item 回忆截图 → \texttt{rocf\_\{id\}\_recall\_\{timestamp\}.png}
+\end{itemize}
+
+\subsection{历史记录}
+
+\begin{itemize}[leftmargin=*]
+  \item 扫描 \texttt{OUTPUT\_DIR} 中所有 \texttt{.json} 文件
+  \item 以表格展示：编号 | 性别 | 年龄 | 利手 | 日期 | 临摹笔数 | 回忆笔数 | 数据文件
+  \item 支持点击表头排序
+  \item 返回按钮回到主菜单
+\end{itemize}
+
+\section{评分系统映射}
+
+\subsection{Osterrieth 18 单元体系（当前实现目标）}
+
+参考 Rey 图形标准分解（Osterrieth, 1944），18 个单元对应图形中的关键结构元素。电子化系统通过分析绘制的几何特征判定每单元得分：
+
+\begin{table}[h]
+\centering
+\begin{tabular}{cllp{4cm}}
+\toprule
+\textbf{单元} & \textbf{图形元素} & \textbf{判定规则} & \textbf{分值} \\
+\midrule
+1  & 大矩形外框   & 检测封闭四边形，边长比接近 2:1  & 0/1/2 \\
+2  & 水平中线     & 检测 Y$\approx$0.5H 处接近水平的线段 & 0/1/2 \\
+3  & 垂直中线     & 检测 X$\approx$0.5W 处接近垂直的线段 & 0/1/2 \\
+4  & 左上对角线   & 检测从矩形左上到中心的线段  & 0/1/2 \\
+5  & 右上对角线   & 检测从矩形右上到中心的线段  & 0/1/2 \\
+6--18 & （其余 13 个细节单元） & — & 0/1/2 \\
+\bottomrule
+\end{tabular}
+\caption{Osterrieth 18 单元评分体系}
+\end{table}
+
+\subsection{评分扩展计划}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{阶段} & \textbf{评分系统} & \textbf{状态} \\
+\midrule
+v2.0 & Osterrieth 18 单元（手动参考） & 已实现数据捕获 \\
+v2.1 & 基于规则的半自动评分（参考 Sangiovanni 等, 2020） & 规划中 \\
+v3.0 & BQSS 17 项定性维度支持 & 远期 \\
+v4.0 & CNN 自动评分集成（参考 Langer 等, 2022） & 远期 \\
+\bottomrule
+\end{tabular}
+\caption{评分系统扩展路线图}
+\end{table}
+
+\section{技术实现细节}
+
+\subsection{画布渲染引擎}
+
+\begin{lstlisting}[language=Python]
+class DrawingCanvas(QWidget):
+    """基于 QPainter 的自由绘画画布"""
+    
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        # 逐笔重放所有 strokes
+        for stroke in self.strokes:
+            pen = QPen(QColor(stroke["color"]), stroke["width"])
+            pen.setCapStyle(Qt.RoundCap)
+            pen.setJoinStyle(Qt.RoundJoin)
+            p.setPen(pen)
+            path = QPainterPath()
+            path.moveTo(stroke["points"][0]["x"], stroke["points"][0]["y"])
+            for pt in stroke["points"][1:]:
+                path.lineTo(pt["x"], pt["y"])
+            p.drawPath(path)
+\end{lstlisting}
+
+\subsection{跨平台字体方案}
+
+\begin{lstlisting}[language=Python]
+import platform
+_SYSTEM = platform.system()
+if _SYSTEM == "Darwin":
+    FONT_FAMILY = "PingFang SC"
+elif _SYSTEM == "Windows":
+    FONT_FAMILY = "Microsoft YaHei"
+else:
+    FONT_FAMILY = "Noto Sans CJK SC"
+\end{lstlisting}
+
+\subsection{数据目录}
+
+\begin{lstlisting}[language=Python]
+# 开发环境：项目根目录下的 output/
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
+# 打包环境：~/Documents/ROCF测验数据/
+# （由 py2app 打包时自动切换）
+\end{lstlisting}
+
+\subsection{可配置参数}
+
+通过 Marvis SKILL.md 暴露的核心配置项：
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{参数} & \textbf{默认值} & \textbf{说明} \\
+\midrule
+\texttt{COPY\_TIME}     & 600  & 临摹阶段时长（秒） \\
+\texttt{RECALL\_TIME}   & 600  & 回忆阶段时长（秒） \\
+\texttt{DISTRACT\_TIME} & 60   & 干扰任务时长（秒） \\
+\texttt{WINDOW\_W}      & 1400 & 窗口宽度（像素） \\
+\texttt{WINDOW\_H}      & 900  & 窗口高度（像素） \\
+\bottomrule
+\end{tabular}
+\caption{可配置参数}
+\end{table}
+
+\section{临床应用映射}
+
+根据文献综述中识别的各疾病 ROCF 特征模式，系统设计如下对应：
+
+\begin{table}[h]
+\centering
+\begin{tabular}{p{3.8cm} p{5cm} p{5cm}}
+\toprule
+\textbf{疾病} & \textbf{系统捕获指标} & \textbf{临床意义} \\
+\midrule
+阿尔茨海默病（早期） & 临摹保留 + 延迟回忆$\downarrow$ + 再认$\downarrow$ & 海马储存缺陷，数字生物标志物 \\
+TBI & 临摹$\downarrow$ + 笔序混乱 + 组织性$\downarrow$ & 执行规划损伤，可量化笔序离散度 \\
+帕金森病 & 临摹轻度$\downarrow$ + 回忆$\downarrow$ + 再认保留 & 提取缺陷，DSS-ROCF 组织评分敏感 \\
+ADHD & 冲动性笔触 + 遗漏细节单元 & 笔速方差大、完成时间短 \\
+血管性痴呆 & 临摹显著$\downarrow$ + 碎片化组织 & BQSS 定性维度鉴别 \\
+\bottomrule
+\end{tabular}
+\caption{临床应用映射}
+\end{table}
+
+\subsection{组织策略自动判定}
+
+系统通过分析临摹阶段笔序自动判定策略类型（参考 Savage 等, 2000）：
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{整体式}：首笔为大矩形外框 → \texttt{strategy: "configural"}
+  \item \textbf{零散式}：从独立细节开始 → \texttt{strategy: "piecemeal"}
+  \item \textbf{中间型}：混合策略 → \texttt{strategy: "intermediate"}
+\end{itemize}
+
+\section{部署与分发}
+
+\subsection{macOS .app 打包}
+
+\begin{lstlisting}[language=bash]
+python setup.py py2app
+# 输出：dist/ROCF测验.app（独立应用包，无需安装 Python）
+\end{lstlisting}
+
+\subsection{DMG 分发}
+
+\begin{lstlisting}[language=bash]
+hdiutil create -volname "ROCF测验" -srcfolder dist/ROCF测验.app \
+  -ov -format UDZO ROCF测验.dmg
+\end{lstlisting}
+
+\subsection{Marvis Skill 分发}
+
+通过 GitHub Release 和 \texttt{npx skills add} 一键安装：
+
+\begin{lstlisting}[language=bash]
+npx skills add https://github.com/hyde357/rocf-test -g -y
+\end{lstlisting}
+
+\subsection{GitHub Release}
+
+\begin{itemize}[leftmargin=*]
+  \item 仓库：\url{https://github.com/hyde357/rocf-test}
+  \item Release v1.0.0：包含 DMG 安装包、验证报告、18 项测试全部通过
+\end{itemize}
+
+\section{测试验证}
+
+\subsection{测试套件}
+
+\texttt{tests/test\_rocf.py} 包含 18 项单元测试，覆盖：
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{测试类} & \textbf{条目数} & \textbf{覆盖范围} \\
+\midrule
+字体检测   & 3 & 跨平台字体回退链 \\
+配置常量   & 4 & WINDOW\_W/H, COPY\_TIME 等 \\
+数据目录   & 2 & 创建权限、读写验证 \\
+PySide6 环境 & 2 & 模块可用性、版本检查 \\
+应用启动   & 1 & ROCFMainWindow 初始化 \\
+画布逻辑   & 3 & 笔画记录、撤销、清空 \\
+数据持久化 & 2 & JSON 序列化、截图保存 \\
+安装脚本   & 1 & install\_deps.py 语法 \\
+\bottomrule
+\end{tabular}
+\caption{测试覆盖范围}
+\end{table}
+
+\subsection{测试结果}
+
+\begin{verbatim}
+Ran 18 tests in 0.074s
+OK (全部通过)
+\end{verbatim}
+
+% ============================================================================
+% 参考文献
+% ============================================================================
+\section*{附录 A：参考文献}
+\addcontentsline{toc}{section}{附录 A：参考文献}
+
+\begin{enumerate}[leftmargin=*, label={[\arabic*]}]
+  \item Rey, A. (1941). L'examen psychologique dans les cas d'encéphalopathie traumatique. \textit{Archives de Psychologie}, 28, 286–340.
+  \item Osterrieth, P. A. (1944). Le test de copie d'une figure complexe. \textit{Archives de Psychologie}, 30, 206–356.
+  \item Meyers, J. E., \& Meyers, K. R. (1995). \textit{Rey Complex Figure Test and Recognition Trial}. PAR.
+  \item Stern, R. A., et al. (1999). The Boston Qualitative Scoring System for the Rey-Osterrieth Complex Figure. \textit{Journal of Clinical and Experimental Neuropsychology}, 21(3), 401–417.
+  \item Savage, C. R., et al. (2000). Organizational strategies mediate nonverbal memory impairment in obsessive-compulsive disorder. \textit{Biological Psychiatry}, 45(7), 905–916.
+  \item Langer, N., et al. (2022). Automated scoring of the Rey-Osterrieth Complex Figure Test using deep learning. \textit{Neuropsychology}, 36(5), 456–467.
+  \item Zhang, L., et al. (2018). Normative data for the ROCF in a Chinese population. \textit{Applied Neuropsychology: Adult}, 25(3), 233–241.
+  \item Zhang, Y., et al. (2021). Digital pen-based administration of the ROCF captures latent neuropsychological structure. \textit{Assessment}, 28(6), 1562–1574.
+\end{enumerate}
+
+\section*{附录 B：项目文件结构}
+\addcontentsline{toc}{section}{附录 B：项目文件结构}
+
+\begin{verbatim}
+rocf-test/
+├── SKILL.md                  # Marvis Skill 描述与配置
+├── README.md                 # 项目说明
+├── .gitignore
+├── assets/
+│   └── rocf_qt.py            # 主程序源码（831 行）
+├── scripts/
+│   └── install_deps.py       # 依赖安装脚本
+├── tests/
+│   └── test_rocf.py          # 测试套件（18 项）
+├── VALIDATION_REPORT.md      # 验证报告
+└── ROCF测验.dmg              # macOS 安装包（36 MB）
+\end{verbatim}
+
+\end{document}

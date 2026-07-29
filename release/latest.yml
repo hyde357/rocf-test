@@ -1,0 +1,8 @@
+version: 3.0.0
+files:
+  - url: rocf-test-setup-3.0.0.exe
+    sha512: tt81VMIRETzOqv4jVixOQwmI7K9/tJ2uzptkgp35tdFQdjs5fjw4dBRFJr9tk2PObhmXMcJSmZdADJgsSiPMMQ==
+    size: 99556195
+path: rocf-test-setup-3.0.0.exe
+sha512: tt81VMIRETzOqv4jVixOQwmI7K9/tJ2uzptkgp35tdFQdjs5fjw4dBRFJr9tk2PObhmXMcJSmZdADJgsSiPMMQ==
+releaseDate: '2026-07-29T05:03:18.444Z'
