@@ -9,7 +9,9 @@ AIGC:
     ReservedCode2: fAXII/7E7U/8a1Ns8nm0Y8GlUuZt7LaklzyjEl5v27elcN9Jcze61TKlMZjWaOqa9lbbqs173pBGWGjQrK5oyIsbNU56DhmLhhCu1P+3/2/z0GK4G2SV+yoCg7YjihfwUZhBJvLw3KLfLMsgM2v/lKJ2Omx53B749L/f9NhbvHH5CvIyk4AUSoaAIro=
 ---
 
+![系统架构图](fig/fig_architecture.pdf)
 
+![工作流程图](fig/fig_workflow.pdf)
 
 # ROCF 智能评估助手（ROCF-Agent）v2.0
 
