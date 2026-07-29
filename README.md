@@ -1,6 +1,6 @@
 # ROCF Test
 
-Rey-Osterrieth Complex Figure (ROCF) 测验应用 — 一个基于 PySide6 的跨平台视觉记忆评估工具。
+Rey-Osterrieth Complex Figure (ROCF) 测验应用 — 一个基于 PsychoPy 等开源工具开发的跨平台视觉记忆评估工具。
 
 ## 功能
 
