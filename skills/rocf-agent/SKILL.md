@@ -4,9 +4,6 @@ description: "ROCF 电子测评系统 —— 基于 HTML5 Canvas 与 JavaScript 
 version: "2.0"
 ---
 
-![系统架构图](fig/fig_architecture.pdf)
-
-![工作流程图](fig/fig_workflow.pdf)
 
 # ROCF 电子测评系统 v2.0
 
